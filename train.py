@@ -15,6 +15,8 @@ import os
 import time
 import numpy as np
 import torch
+import json
+from datetime import datetime
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.metrics import f1_score, accuracy_score, classification_report
@@ -239,8 +241,9 @@ def main():
     test_metrics = compute_metrics(test_true, test_pred, to_print=True)
 
     # Save results
+        # Save current run to results.txt (overwrites with latest)
     with open(CONFIG['results_path'], 'w') as f:
-        f.write("AuraMetrics Custom Multimodal Fusion Model — Results\n")
+        f.write("AuraMetrics Custom Multimodal Fusion Model — Latest Results\n")
         f.write("="*50 + "\n")
         f.write(f"MAE:                 {test_metrics['mae']:.4f}\n")
         f.write(f"Pearson Correlation: {test_metrics['corr']:.4f}\n")
@@ -249,7 +252,61 @@ def main():
         f.write(f"F1 (pos/neg):        {test_metrics['f1_2']:.4f}\n")
         f.write(f"Acc-2 (non-neg/neg): {test_metrics['acc_nn']:.4f}\n")
         f.write(f"Training time:       {total_time/60:.1f} minutes\n")
+    
+    # Append to run history
+    run_record = {
+        'timestamp':    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'train_samples': len(train_loader.dataset),
+        'dev_samples':   len(dev_loader.dataset),
+        'test_samples':  len(test_loader.dataset),
+        'epochs_run':    epoch,
+        'hidden_dim':    CONFIG['hidden_dim'],
+        'batch_size':    CONFIG['batch_size'],
+        'dropout':       CONFIG['dropout'],
+        'learning_rate': CONFIG['learning_rate'],
+        'mae':           round(test_metrics['mae'], 4),
+        'corr':          round(test_metrics['corr'], 4),
+        'acc_7':         round(test_metrics['acc_7'], 4),
+        'acc_2':         round(test_metrics['acc_2'], 4),
+        'f1_2':          round(test_metrics['f1_2'], 4),
+        'acc_nn':        round(test_metrics['acc_nn'], 4),
+        'time_mins':     round(total_time/60, 1),
+    }
+    
+    # Load existing history or create new
+    history_path = 'run_history.json'
+    if os.path.exists(history_path):
+        with open(history_path, 'r') as f:
+            history = json.load(f)
+    else:
+        history = {'runs': [], 'best': None}
+    
+    history['runs'].append(run_record)
+    
+    # Track best run
+    if history['best'] is None or run_record['acc_2'] > history['best']['acc_2']:
+        history['best'] = run_record
+        print(f"\n★ NEW BEST RUN! Acc-2: {run_record['acc_2']}")
+    else:
+        print(f"\nBest run remains: Acc-2: {history['best']['acc_2']} "
+              f"({history['best']['timestamp']})")
+    
+    with open(history_path, 'w') as f:
+        json.dump(history, f, indent=2)
+    
+    # Print run comparison table
+    print(f"\n{'='*70}")
+    print("RUN HISTORY")
+    print(f"{'='*70}")
+    print(f"{'#':<4} {'Date':<20} {'Samples':<8} {'Acc-2':<8} {'F1':<8} {'MAE':<8} {'Corr':<8}")
+    print("-"*70)
+    for i, run in enumerate(history['runs'], 1):
+        best_marker = " ★" if run == history['best'] else ""
+        print(f"{i:<4} {run['timestamp']:<20} {run['train_samples']:<8} "
+              f"{run['acc_2']:<8} {run['f1_2']:<8} {run['mae']:<8} {run['corr']:<8}{best_marker}")
+    
     print(f"\nResults saved to {CONFIG['results_path']}")
+    print(f"Run history saved to {history_path}")
 
 
 if __name__ == '__main__':
