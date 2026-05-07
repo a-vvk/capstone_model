@@ -119,7 +119,9 @@ def train_epoch(model, loader, optimizer, criterion, device, clip):
         labels = batch['label'].to(device)
 
         preds = model(bert, audio, visual, a_lens, v_lens)
-        loss  = criterion(preds, labels)
+        task_loss  = criterion(preds, labels)
+        recon_loss = model.get_reconstruction_loss()
+        loss = task_loss + 0.3 * recon_loss
         loss.backward()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
