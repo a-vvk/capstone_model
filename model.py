@@ -139,11 +139,30 @@ class AuraMetricsFusionModel(nn.Module):
         # Randomly zero out entire modalities to simulate missing inputs
         if self.training and self.modality_dropout > 0:
             batch_size = t.size(0)
-            for feat in [a, v]:
-                mask = torch.bernoulli(
-                    torch.ones(batch_size, 1, device=t.device) * (1 - self.modality_dropout)
-                )
-                feat.mul_(mask)
+            device = t.device
+            p = self.modality_dropout
+            
+            # For each sample, randomly choose a dropout pattern:
+            # 0 = keep all (60%), 1 = drop audio (10%), 2 = drop visual (10%),
+            # 3 = drop both audio+visual (10%), 4 = drop text (5%), 5 = noise all (5%)
+            pattern = torch.rand(batch_size, device=device)
+            
+            for b in range(batch_size):
+                r = pattern[b].item()
+                if r < 0.10:        # drop audio
+                    a[b] = torch.zeros_like(a[b])
+                elif r < 0.20:      # drop visual
+                    v[b] = torch.zeros_like(v[b])
+                elif r < 0.30:      # drop both audio + visual (text only)
+                    a[b] = torch.zeros_like(a[b])
+                    v[b] = torch.zeros_like(v[b])
+                elif r < 0.35:      # drop text
+                    t[b] = torch.zeros_like(t[b])
+                elif r < 0.40:      # add noise to all
+                    t[b] += torch.randn_like(t[b]) * 0.1
+                    a[b] += torch.randn_like(a[b]) * 0.1
+                    v[b] += torch.randn_like(v[b]) * 0.1
+                # else: keep all (60% of the time)
 
         # ── Cross-modal attention ─────────────────────────────────────────────
         t_enriched = self.text_audio_attn(t, a)   # text attends to audio

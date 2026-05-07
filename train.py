@@ -264,12 +264,12 @@ def main():
         'batch_size':    CONFIG['batch_size'],
         'dropout':       CONFIG['dropout'],
         'learning_rate': CONFIG['learning_rate'],
-        'mae':           round(test_metrics['mae'], 4),
-        'corr':          round(test_metrics['corr'], 4),
-        'acc_7':         round(test_metrics['acc_7'], 4),
-        'acc_2':         round(test_metrics['acc_2'], 4),
-        'f1_2':          round(test_metrics['f1_2'], 4),
-        'acc_nn':        round(test_metrics['acc_nn'], 4),
+        'mae':           round(float(test_metrics['mae']), 4),
+        'corr':          round(float(test_metrics['corr']), 4),
+        'acc_7':         round(float(test_metrics['acc_7']), 4),
+        'acc_2':         round(float(test_metrics['acc_2']), 4),
+        'f1_2':          round(float(test_metrics['f1_2']), 4),
+        'acc_nn':        round(float(test_metrics['acc_nn']), 4),
         'time_mins':     round(total_time/60, 1),
     }
     
