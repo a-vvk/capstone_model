@@ -1,9 +1,9 @@
 AuraMetrics Custom Multimodal Fusion Model — Latest Results
 ==================================================
-MAE:                 0.4931
-Pearson Correlation: 0.5929
-Acc-7:               0.4980
-Acc-2 (pos/neg):     0.7935
-F1 (pos/neg):        0.7953
-Acc-2 (non-neg/neg): 0.7840
-Training time:       72.2 minutes
+MAE:                 0.4810
+Pearson Correlation: 0.6152
+Acc-7:               0.5560
+Acc-2 (pos/neg):     0.8043
+F1 (pos/neg):        0.8001
+Acc-2 (non-neg/neg): 0.8040
+Training time:       136.3 minutes
