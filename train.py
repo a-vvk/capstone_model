@@ -1,15 +1,14 @@
-"""
-AuraMetrics Custom Multimodal Fusion Model — Training Script
-============================================================
-Trains a lightweight cross-modal attention fusion model on CMU-MOSEI
-using pre-extracted DistilBERT text features, COVAREP audio features,
-and OpenFace 2.0 visual features.
 
-Usage:
-    python train.py
+# AuraMetrics Custom Multimodal Fusion Model — Training Script
+# ============================================================
+# Trains a lightweight cross-modal attention fusion model on CMU-MOSEI
+# using pre-extracted DistilBERT text features, COVAREP audio features,
+# and OpenFace 2.0 visual features.
 
-Results are printed to console and saved to results.txt.
-"""
+# Usage: python train.py
+
+# Results are printed to console and saved to results.txt.
+
 
 import os
 import time

@@ -6,17 +6,16 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class MOSEIDataset(Dataset):
-    """
-    Dataset loader for CMU-MOSEI with pre-extracted DistilBERT features.
 
-    Each sample contains:
-    - words:        word ID sequence (not used directly, kept for compatibility)
-    - visual:       OpenFace 2.0 facial action unit sequence (T_v, 35)
-    - acoustic:     COVAREP acoustic feature sequence (T_a, 74)
-    - actual_words: list of word strings
-    - bert_feat:    DistilBERT CLS embedding (768,)
-    - label:        sentiment score (1,) averaged across annotators
-    """
+    # Dataset loader for CMU-MOSEI with pre-extracted DistilBERT features.
+
+    # Each sample contains:
+    # - words:        word ID sequence (not used directly, kept for compatibility)
+    # - visual:       OpenFace 2.0 facial action unit sequence (T_v, 35)
+    # - acoustic:     COVAREP acoustic feature sequence (T_a, 74)
+    # - actual_words: list of word strings
+    # - bert_feat:    DistilBERT CLS embedding (768,)
+    # - label:        sentiment score (1,) averaged across annotators
 
     def __init__(self, pkl_path):
         with open(pkl_path, 'rb') as f:
@@ -50,10 +49,10 @@ class MOSEIDataset(Dataset):
 
 
 def collate_fn(batch):
-    """
-    Custom collate function to pad variable-length sequences.
-    Returns padded tensors and actual lengths for packing in LSTM.
-    """
+
+    # Custom collate function to pad variable-length sequences.
+    # Returns padded tensors and actual lengths for packing in LSTM.
+
     bert_feats  = torch.stack([b['bert_feat'] for b in batch])
     labels      = torch.stack([b['label']     for b in batch])
 
