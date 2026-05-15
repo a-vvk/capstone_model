@@ -1,34 +1,34 @@
 {
   "runs": [
     {
-      "timestamp": "2026-05-15 18:17:03",
+      "timestamp": "2026-05-15 23:05:17",
       "train_samples": 2000,
-      "epochs_run": 9,
+      "epochs_run": 16,
       "hidden_dim": 128,
       "batch_size": 16,
-      "sent_mae": 0.5167,
-      "sent_corr": 0.5514,
-      "sent_acc_7": 0.458,
-      "sent_acc_2": 0.7909,
-      "sent_f1": 0.7849,
-      "emo_mae": 0.1579,
-      "emo_f1": 0.0,
-      "time_mins": 65.3
+      "sent_mae": 0.487,
+      "sent_corr": 0.6151,
+      "sent_acc_7": 0.532,
+      "sent_acc_2": 0.8017,
+      "sent_f1": 0.8017,
+      "emo_mae": 0.1339,
+      "emo_f1": 0.1524,
+      "time_mins": 88.8
     }
   ],
   "best": {
-    "timestamp": "2026-05-15 18:17:03",
+    "timestamp": "2026-05-15 23:05:17",
     "train_samples": 2000,
-    "epochs_run": 9,
+    "epochs_run": 16,
     "hidden_dim": 128,
     "batch_size": 16,
-    "sent_mae": 0.5167,
-    "sent_corr": 0.5514,
-    "sent_acc_7": 0.458,
-    "sent_acc_2": 0.7909,
-    "sent_f1": 0.7849,
-    "emo_mae": 0.1579,
-    "emo_f1": 0.0,
-    "time_mins": 65.3
+    "sent_mae": 0.487,
+    "sent_corr": 0.6151,
+    "sent_acc_7": 0.532,
+    "sent_acc_2": 0.8017,
+    "sent_f1": 0.8017,
+    "emo_mae": 0.1339,
+    "emo_f1": 0.1524,
+    "time_mins": 88.8
   }
 }

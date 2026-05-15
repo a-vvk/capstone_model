@@ -28,7 +28,7 @@ CONFIG = {
     'clip':             1.0,
     # Loss weights
     'sentiment_weight': 1.0,
-    'emotion_weight':   0.5,   # secondary task — weighted lower
+    'emotion_weight':   1.0,   # secondary task — weighted lower
     'recon_weight':     0.3,
     'checkpoint_path':  'best_model.pt',
     'results_path':     'results.txt',
@@ -80,7 +80,7 @@ def compute_emotion_metrics(y_true, y_pred, to_print=False):
 
     # Binary presence detection (intensity > 0 = present)
     presence_true = (y_true > 0).astype(int)
-    presence_pred = (y_pred > 0.5).astype(int)
+    presence_pred = (y_pred > 0.1).astype(int)
     f1_per_emotion = []
     for i in range(6):
         if presence_true[:, i].sum() > 0:
@@ -130,7 +130,8 @@ def train_epoch(model, loader, optimizer, sent_criterion, emo_criterion, device,
         sentiment_pred, emotion_pred = model(bert, audio, visual, a_lens, v_lens)
 
         sent_loss  = sent_criterion(sentiment_pred, sentiment_true)
-        emo_loss   = emo_criterion(emotion_pred, emotion_true)
+        emo_weights = (emotion_true > 0).float() * 4.0 + 1.0
+        emo_loss = (emo_criterion(emotion_pred, emotion_true) * emo_weights).mean()
         recon_loss = model.get_reconstruction_loss()
 
         loss = (config['sentiment_weight'] * sent_loss +

@@ -1,21 +1,21 @@
 AuraMetrics Multimodal Fusion Model — Test Results
 ==================================================
 SENTIMENT
-  MAE:                 0.5167
-  Pearson Correlation: 0.5514
-  Acc-7:               0.4580
-  Acc-2 (pos/neg):     0.7909
-  F1 (pos/neg):        0.7849
-  Acc-2 (non-neg/neg): 0.7980
+  MAE:                 0.4870
+  Pearson Correlation: 0.6151
+  Acc-7:               0.5320
+  Acc-2 (pos/neg):     0.8017
+  F1 (pos/neg):        0.8017
+  Acc-2 (non-neg/neg): 0.7960
 
 EMOTION
-  Mean MAE:            0.1579
-  Mean F1 (presence):  0.0000
-  happiness    MAE: 0.3922  F1: 0.0000
-  sadness      MAE: 0.1439  F1: 0.0000
-  anger        MAE: 0.1515  F1: 0.0000
-  fear         MAE: 0.0640  F1: 0.0000
-  disgust      MAE: 0.1140  F1: 0.0000
-  surprise     MAE: 0.0820  F1: 0.0000
+  Mean MAE:            0.1339
+  Mean F1 (presence):  0.1524
+  happiness    MAE: 0.3394  F1: 0.9142
+  sadness      MAE: 0.1442  F1: 0.0000
+  anger        MAE: 0.1376  F1: 0.0000
+  fear         MAE: 0.0359  F1: 0.0000
+  disgust      MAE: 0.0883  F1: 0.0000
+  surprise     MAE: 0.0582  F1: 0.0000
 
-Training time: 65.3 minutes
+Training time: 88.8 minutes
