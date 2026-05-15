@@ -4,18 +4,21 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 
+EMOTION_NAMES = ['happiness', 'sadness', 'anger', 'fear', 'disgust', 'surprise']
+
 
 class MOSEIDataset(Dataset):
+    """
+    Dataset loader for CMU-MOSEI with pre-extracted DistilBERT features.
 
-    # Dataset loader for CMU-MOSEI with pre-extracted DistilBERT features.
-
-    # Each sample contains:
-    # - words:        word ID sequence (not used directly, kept for compatibility)
-    # - visual:       OpenFace 2.0 facial action unit sequence (T_v, 35)
-    # - acoustic:     COVAREP acoustic feature sequence (T_a, 74)
-    # - actual_words: list of word strings
-    # - bert_feat:    DistilBERT CLS embedding (768,)
-    # - label:        sentiment score (1,) averaged across annotators
+    Each sample contains:
+    - words:        word ID sequence
+    - visual:       OpenFace 2.0 facial action unit sequence (T_v, 713)
+    - acoustic:     COVAREP acoustic feature sequence (T_a, 74)
+    - actual_words: list of word strings
+    - bert_feat:    DistilBERT CLS embedding (768,)
+    - label:        (1, 7) — [sentiment, happiness, sadness, anger, fear, disgust, surprise]
+    """
 
     def __init__(self, pkl_path):
         with open(pkl_path, 'rb') as f:
@@ -28,47 +31,39 @@ class MOSEIDataset(Dataset):
     def __getitem__(self, idx):
         (words, visual, acoustic, actual_words, bert_feat), label, vid = self.data[idx]
 
-        # Handle label shape — take mean sentiment score
+        # label shape is (1, 7) — flatten to (7,)
         if isinstance(label, np.ndarray):
-            if label.ndim == 2:
-                sentiment = float(np.nanmean(label[:, 0]))
-            elif label.ndim == 1:
-                sentiment = float(np.nanmean(label))
-            else:
-                sentiment = float(label)
+            label = label.squeeze()
+            if label.ndim == 0:
+                # only sentiment, pad with zeros
+                label = np.array([float(label), 0, 0, 0, 0, 0, 0])
+            elif len(label) < 7:
+                label = np.concatenate([label, np.zeros(7 - len(label))])
         else:
-            sentiment = float(label)
+            label = np.array([float(label), 0, 0, 0, 0, 0, 0])
+
+        label = np.nan_to_num(label.astype(np.float32))
 
         return {
             'bert_feat': torch.tensor(bert_feat, dtype=torch.float32),
             'visual':    torch.tensor(visual,    dtype=torch.float32),
             'acoustic':  torch.tensor(acoustic,  dtype=torch.float32),
-            'label':     torch.tensor([sentiment], dtype=torch.float32),
+            'label':     torch.tensor(label,     dtype=torch.float32),  # (7,)
             'vid':       vid
         }
 
 
 def collate_fn(batch):
+    bert_feats = torch.stack([b['bert_feat'] for b in batch])
+    labels     = torch.stack([b['label']     for b in batch])
 
-    # Custom collate function to pad variable-length sequences.
-    # Returns padded tensors and actual lengths for packing in LSTM.
-
-    bert_feats  = torch.stack([b['bert_feat'] for b in batch])
-    labels      = torch.stack([b['label']     for b in batch])
-
-    # Pad visual sequences
     visual_seqs = [b['visual'] for b in batch]
-    visual_lens = torch.tensor([v.size(0) for v in visual_seqs], dtype=torch.long)
+    visual_lens = torch.tensor([v.size(0) for v in visual_seqs], dtype=torch.long).clamp(min=1)
     visual_pad  = pad_sequence(visual_seqs, batch_first=True)
 
-    # Pad acoustic sequences
     acoustic_seqs = [b['acoustic'] for b in batch]
-    acoustic_lens = torch.tensor([a.size(0) for a in acoustic_seqs], dtype=torch.long)
+    acoustic_lens = torch.tensor([a.size(0) for a in acoustic_seqs], dtype=torch.long).clamp(min=1)
     acoustic_pad  = pad_sequence(acoustic_seqs, batch_first=True)
-
-    # Clamp lengths to at least 1 to avoid pack_padded_sequence errors
-    visual_lens  = visual_lens.clamp(min=1)
-    acoustic_lens = acoustic_lens.clamp(min=1)
 
     return {
         'bert_feat':     bert_feats,
@@ -76,7 +71,7 @@ def collate_fn(batch):
         'acoustic':      acoustic_pad,
         'visual_lens':   visual_lens,
         'acoustic_lens': acoustic_lens,
-        'label':         labels,
+        'label':         labels,  # (B, 7)
     }
 
 
