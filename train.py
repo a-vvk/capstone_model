@@ -1,3 +1,13 @@
+"""
+AuraMetrics Custom Multimodal Fusion Model — Training Script (v4)
+=================================================================
+Multi-task model: predicts both sentiment (-3 to +3) and
+6 emotion intensities (happiness, sadness, anger, fear, disgust, surprise).
+
+Usage:
+    python train.py
+"""
+
 import os
 import json
 import time
@@ -28,7 +38,7 @@ CONFIG = {
     'clip':             1.0,
     # Loss weights
     'sentiment_weight': 1.0,
-    'emotion_weight':   1.0,   # secondary task — weighted lower
+    'emotion_weight':   1.0,   # raised from 0.5
     'recon_weight':     0.3,
     'checkpoint_path':  'best_model.pt',
     'results_path':     'results.txt',
@@ -78,9 +88,9 @@ def compute_emotion_metrics(y_true, y_pred, to_print=False):
     mae_per_emotion = np.mean(np.abs(y_pred - y_true), axis=0)
     mae_mean = np.mean(mae_per_emotion)
 
-    # Binary presence detection (intensity > 0 = present)
+    # Lower threshold — model predicts small values for rare emotions
     presence_true = (y_true > 0).astype(int)
-    presence_pred = (y_pred > 0.1).astype(int)
+    presence_pred = (y_pred > 0.15).astype(int)
     f1_per_emotion = []
     for i in range(6):
         if presence_true[:, i].sum() > 0:
@@ -108,8 +118,20 @@ def compute_emotion_metrics(y_true, y_pred, to_print=False):
     }
 
 
+# ── Focal loss for emotions ────────────────────────────────────────────────────
+def focal_emo_loss(pred, true, gamma=2.0):
+    """
+    Focal-style MSE loss that penalises missed detections more heavily.
+    Scales the per-element MSE by how far the true value is from zero,
+    so rare but present emotions receive a stronger gradient signal.
+    """
+    mse = (pred - true) ** 2
+    weight = (true.abs() + 0.1) ** gamma
+    return (mse * weight).mean()
+
+
 # ── Training loop ──────────────────────────────────────────────────────────────
-def train_epoch(model, loader, optimizer, sent_criterion, emo_criterion, device, config):
+def train_epoch(model, loader, optimizer, sent_criterion, device, config):
     model.train()
     total_loss = 0
     n_batches  = len(loader)
@@ -130,8 +152,7 @@ def train_epoch(model, loader, optimizer, sent_criterion, emo_criterion, device,
         sentiment_pred, emotion_pred = model(bert, audio, visual, a_lens, v_lens)
 
         sent_loss  = sent_criterion(sentiment_pred, sentiment_true)
-        emo_weights = (emotion_true > 0).float() * 4.0 + 1.0
-        emo_loss = (emo_criterion(emotion_pred, emotion_true) * emo_weights).mean()
+        emo_loss   = focal_emo_loss(emotion_pred, emotion_true)
         recon_loss = model.get_reconstruction_loss()
 
         loss = (config['sentiment_weight'] * sent_loss +
@@ -150,7 +171,7 @@ def train_epoch(model, loader, optimizer, sent_criterion, emo_criterion, device,
     return total_loss / n_batches
 
 
-def evaluate(model, loader, sent_criterion, emo_criterion, device, config):
+def evaluate(model, loader, sent_criterion, device, config):
     model.eval()
     total_loss = 0
     sent_true_all, sent_pred_all = [], []
@@ -171,7 +192,7 @@ def evaluate(model, loader, sent_criterion, emo_criterion, device, config):
             sentiment_pred, emotion_pred = model(bert, audio, visual, a_lens, v_lens)
 
             sent_loss = sent_criterion(sentiment_pred, sentiment_true)
-            emo_loss  = emo_criterion(emotion_pred, emotion_true)
+            emo_loss  = focal_emo_loss(emotion_pred, emotion_true)
             loss = config['sentiment_weight'] * sent_loss + config['emotion_weight'] * emo_loss
             total_loss += loss.item()
 
@@ -202,7 +223,6 @@ def main():
     print(f"Trainable parameters: {total_params:,}")
 
     sent_criterion = nn.MSELoss()
-    emo_criterion  = nn.MSELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=CONFIG['learning_rate'], weight_decay=CONFIG['weight_decay'])
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
 
@@ -217,10 +237,10 @@ def main():
         print(f"\nEpoch {epoch}/{CONFIG['n_epochs']}")
         print("-" * 30)
 
-        train_loss = train_epoch(model, train_loader, optimizer, sent_criterion, emo_criterion, device, CONFIG)
+        train_loss = train_epoch(model, train_loader, optimizer, sent_criterion, device, CONFIG)
 
         dev_loss, dev_sent_true, dev_sent_pred, dev_emo_true, dev_emo_pred = evaluate(
-            model, dev_loader, sent_criterion, emo_criterion, device, CONFIG)
+            model, dev_loader, sent_criterion, device, CONFIG)
 
         dev_sent = compute_sentiment_metrics(dev_sent_true, dev_sent_pred)
         dev_emo  = compute_emotion_metrics(dev_emo_true, dev_emo_pred)
@@ -251,7 +271,7 @@ def main():
     print("\nLoading best model for test evaluation...")
     model.load_state_dict(torch.load(CONFIG['checkpoint_path'], weights_only=True))
     test_loss, test_sent_true, test_sent_pred, test_emo_true, test_emo_pred = evaluate(
-        model, test_loader, sent_criterion, emo_criterion, device, CONFIG)
+        model, test_loader, sent_criterion, device, CONFIG)
 
     test_sent = compute_sentiment_metrics(test_sent_true, test_sent_pred, to_print=True)
     test_emo  = compute_emotion_metrics(test_emo_true, test_emo_pred, to_print=True)
