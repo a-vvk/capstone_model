@@ -8,18 +8,6 @@ EMOTION_NAMES = ['happiness', 'sadness', 'anger', 'fear', 'disgust', 'surprise']
 
 
 class MOSEIDataset(Dataset):
-    """
-    Dataset loader for CMU-MOSEI with pre-extracted DistilBERT features.
-
-    Each sample contains:
-    - words:        word ID sequence
-    - visual:       OpenFace 2.0 facial action unit sequence (T_v, 713)
-    - acoustic:     COVAREP acoustic feature sequence (T_a, 74)
-    - actual_words: list of word strings
-    - bert_feat:    DistilBERT CLS embedding (768,)
-    - label:        (1, 7) — [sentiment, happiness, sadness, anger, fear, disgust, surprise]
-    """
-
     def __init__(self, pkl_path):
         with open(pkl_path, 'rb') as f:
             self.data = pickle.load(f)
@@ -31,11 +19,11 @@ class MOSEIDataset(Dataset):
     def __getitem__(self, idx):
         (words, visual, acoustic, actual_words, bert_feat), label, vid = self.data[idx]
 
-        # label shape is (1, 7) — flatten to (7,)
+        # flatten label from (1, 7) to (7,)
+        # order: [sentiment, happiness, sadness, anger, fear, disgust, surprise]
         if isinstance(label, np.ndarray):
             label = label.squeeze()
             if label.ndim == 0:
-                # only sentiment, pad with zeros
                 label = np.array([float(label), 0, 0, 0, 0, 0, 0])
             elif len(label) < 7:
                 label = np.concatenate([label, np.zeros(7 - len(label))])
@@ -48,7 +36,7 @@ class MOSEIDataset(Dataset):
             'bert_feat': torch.tensor(bert_feat, dtype=torch.float32),
             'visual':    torch.tensor(visual,    dtype=torch.float32),
             'acoustic':  torch.tensor(acoustic,  dtype=torch.float32),
-            'label':     torch.tensor(label,     dtype=torch.float32),  # (7,)
+            'label':     torch.tensor(label,     dtype=torch.float32),
             'vid':       vid
         }
 
@@ -71,7 +59,7 @@ def collate_fn(batch):
         'acoustic':      acoustic_pad,
         'visual_lens':   visual_lens,
         'acoustic_lens': acoustic_lens,
-        'label':         labels,  # (B, 7)
+        'label':         labels,
     }
 
 

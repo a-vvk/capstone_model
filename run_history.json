@@ -1,34 +1,49 @@
 {
   "runs": [
     {
-      "timestamp": "2026-05-16 10:04:08",
-      "train_samples": 2000,
-      "epochs_run": 19,
+      "timestamp": "2026-05-16 13:07:52",
+      "train_samples": 2249,
+      "epochs_run": 23,
       "hidden_dim": 128,
       "batch_size": 16,
-      "sent_mae": 0.4674,
-      "sent_corr": 0.6145,
-      "sent_acc_7": 0.544,
-      "sent_acc_2": 0.8017,
-      "sent_f1": 0.7932,
-      "emo_mae": 0.3446,
-      "emo_f1": 0.6529,
-      "time_mins": 99.3
+      "sent_mae": 0.4787,
+      "sent_corr": 0.584,
+      "sent_acc_7": 0.5695,
+      "sent_acc_2": 0.7942,
+      "sent_f1": 0.7858,
+      "emo_mae": 0.3447,
+      "emo_f1": 0.6439,
+      "time_mins": 141.0
+    },
+    {
+      "timestamp": "2026-05-19 14:04:31",
+      "train_samples": 2249,
+      "epochs_run": 16,
+      "hidden_dim": 128,
+      "batch_size": 16,
+      "sent_acc_2": 0.8167,
+      "sent_f1": 0.807,
+      "sent_mae": 0.4743,
+      "sent_corr": 0.5923,
+      "sent_acc_7": 0.5311,
+      "emo_mae": 0.3731,
+      "emo_f1": 0.6425,
+      "time_mins": 103.9
     }
   ],
   "best": {
-    "timestamp": "2026-05-16 10:04:08",
-    "train_samples": 2000,
-    "epochs_run": 19,
+    "timestamp": "2026-05-19 14:04:31",
+    "train_samples": 2249,
+    "epochs_run": 16,
     "hidden_dim": 128,
     "batch_size": 16,
-    "sent_mae": 0.4674,
-    "sent_corr": 0.6145,
-    "sent_acc_7": 0.544,
-    "sent_acc_2": 0.8017,
-    "sent_f1": 0.7932,
-    "emo_mae": 0.3446,
-    "emo_f1": 0.6529,
-    "time_mins": 99.3
+    "sent_acc_2": 0.8167,
+    "sent_f1": 0.807,
+    "sent_mae": 0.4743,
+    "sent_corr": 0.5923,
+    "sent_acc_7": 0.5311,
+    "emo_mae": 0.3731,
+    "emo_f1": 0.6425,
+    "time_mins": 103.9
   }
 }
