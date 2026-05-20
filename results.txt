@@ -1,21 +1,21 @@
-AuraMetrics â€” Test Results
+AuraMetrics — Test Results
 ==================================================
 SENTIMENT
-  mae: 0.4743
-  corr: 0.5923
-  acc_7: 0.5311
-  acc_2: 0.8167
-  f1_2: 0.8070
-  acc_nn: 0.8180
+  mae: 0.4629
+  corr: 0.5937
+  acc_7: 0.5873
+  acc_2: 0.8039
+  f1_2: 0.7967
+  acc_nn: 0.8077
 
 EMOTION
-  mean_mae: 0.3731
-  mean_f1:  0.6425
-  happiness    mae: 0.7373  f1: 0.9201
-  sadness      mae: 0.3739  f1: 0.7364
-  anger        mae: 0.3853  f1: 0.6385
-  fear         mae: 0.1697  f1: 0.5213
-  disgust      mae: 0.3108  f1: 0.5224
-  surprise     mae: 0.2618  f1: 0.5163
+  mean_mae: 0.3100
+  mean_f1:  0.6259
+  happiness    mae: 0.5668  f1: 0.9201
+  sadness      mae: 0.4084  f1: 0.7364
+  anger        mae: 0.3447  f1: 0.6385
+  fear         mae: 0.1400  f1: 0.5123
+  disgust      mae: 0.2394  f1: 0.5224
+  surprise     mae: 0.1606  f1: 0.4257
 
-time: 103.9 mins
+time: 21.8 mins

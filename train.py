@@ -14,25 +14,25 @@ from model import AuraMetricsFusionModel
 
 
 CONFIG = {
-    'data_dir':         '/Users/jl/MISA/datasets/MOSEI',
-    'batch_size':       16,
-    'hidden_dim':       128,
-    'audio_dim':        74,
-    'visual_dim':       713,
-    'dropout':          0.3,
-    'modality_dropout': 0.2,
-    'learning_rate':    1e-4,
-    'weight_decay':     1e-4,
-    'n_epochs':         30,
-    'patience':         7,
-    'clip':             1.0,
-    'sentiment_weight': 1.0,
-    'emotion_weight':   1.0,
-    'recon_weight':     0.3,
-    'checkpoint_path':  'best_model.pt',
-    'results_path':     'results.txt',
+    'data_dir':               r'C:\path\to\your\project\MISA\datasets\MOSEI\data',
+    'batch_size':             32,
+    'hidden_dim':             256,
+    'audio_dim':              74,
+    'visual_dim':             35, # needs to be changed to 713 potentially
+    'dropout':                0.3,
+    'modality_dropout':       0.2,
+    'learning_rate':          1e-4,
+    'weight_decay':           1e-4,
+    'n_epochs':               60,
+    'patience':               10,
+    'clip':                   1.0,
+    'sentiment_weight':       1.0,
+    'emotion_weight':         1.0,
+    'recon_weight':           0.3,
+    'checkpoint_path':        'best_model.pt',
+    'results_path':           'results.txt',
+    'epochs_before_patience': 10,
 }
-
 
 def compute_sentiment_metrics(y_true, y_pred, to_print=False):
     mae  = np.mean(np.abs(y_pred - y_true))
@@ -155,6 +155,8 @@ def train_epoch(model, loader, optimizer, sent_criterion, device, config):
 def evaluate(model, loader, sent_criterion, device, config):
     model.eval()
     total_loss = 0
+    total_sent_loss = 0 # for insight
+    total_emo_loss = 0 # for insight
     sent_true_all, sent_pred_all = [], []
     emo_true_all,  emo_pred_all  = [], []
 
@@ -175,6 +177,9 @@ def evaluate(model, loader, sent_criterion, device, config):
             loss = (config['sentiment_weight'] * sent_criterion(sent_pred, sent_true) +
                     config['emotion_weight']   * focal_emo_loss(emo_pred, emo_true))
             total_loss += loss.item()
+            
+            total_sent_loss += sent_criterion(sent_pred, sent_true).item() # for insight
+            total_emo_loss  += focal_emo_loss(emo_pred, emo_true).item() # for insight
 
             sent_pred_all.append(sent_pred.cpu().numpy())
             sent_true_all.append(sent_true.cpu().numpy())
@@ -186,11 +191,16 @@ def evaluate(model, loader, sent_criterion, device, config):
     emo_true  = np.concatenate(emo_true_all,  axis=0)
     emo_pred  = np.concatenate(emo_pred_all,  axis=0)
 
-    return total_loss / len(loader), sent_true, sent_pred, emo_true, emo_pred
+    return total_loss / len(loader), total_sent_loss / len(loader), total_emo_loss / len(loader), sent_true, sent_pred, emo_true, emo_pred
 
 
 def main():
-    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
     print(f"Using device: {device}")
 
     train_loader, dev_loader, test_loader = get_loaders(CONFIG['data_dir'], CONFIG['batch_size'])
@@ -199,7 +209,7 @@ def main():
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {n_params:,}")
 
-    sent_criterion = nn.MSELoss()
+    sent_criterion = nn.SmoothL1Loss(beta=0.5)
     optimizer  = torch.optim.AdamW(model.parameters(),
                                    lr=CONFIG['learning_rate'],
                                    weight_decay=CONFIG['weight_decay'])
@@ -216,16 +226,18 @@ def main():
         print(f"\nEpoch {epoch}/{CONFIG['n_epochs']}\n{'-'*30}")
 
         train_loss = train_epoch(model, train_loader, optimizer, sent_criterion, device, CONFIG)
-        dev_loss, dev_st, dev_sp, dev_et, dev_ep = evaluate(
+        dev_loss, dev_sent_loss, dev_emo_loss, dev_st, dev_sp, dev_et, dev_ep = evaluate(
             model, dev_loader, sent_criterion, device, CONFIG)
 
         dev_sent = compute_sentiment_metrics(dev_st, dev_sp)
         dev_emo  = compute_emotion_metrics(dev_et, dev_ep)
 
+        current_lr = optimizer.param_groups[0]['lr']  # for insight
         print(f"Train Loss: {train_loss:.4f} | Dev Loss: {dev_loss:.4f} | "
-              f"Sent Acc-2: {dev_sent['acc_2']:.4f} | Emo MAE: {dev_emo['emotion_mae']:.4f} | "
+              f"Dev Sent SmoothL1Loss: {dev_sent_loss:.4f} | Dev Emo Loss: {dev_emo_loss:.4f} |"
+              f"Sent Acc-2: {dev_sent['acc_2']:.4f} | Sent MAE: {dev_sent['mae']:.4f} |"
+              f"Emo MAE: {dev_emo['emotion_mae']:.4f} | Current learning rate: {current_lr:.2e} |"
               f"Time: {time.time()-t0:.1f}s")
-
         scheduler.step(dev_loss)
 
         if dev_loss < best_dev_loss:
@@ -234,18 +246,22 @@ def main():
             torch.save(model.state_dict(), CONFIG['checkpoint_path'])
             print(f"  >>> New best model saved (dev loss: {dev_loss:.4f})")
         else:
-            patience_counter += 1
-            print(f"  Patience: {patience_counter}/{CONFIG['patience']}")
-            if patience_counter >= CONFIG['patience']:
-                print("Early stopping.")
-                break
+            if epoch <= CONFIG['epochs_before_patience']:
+                patience_counter = CONFIG['epochs_before_patience'] - epoch
+                print(f"patience counter starts in: {patience_counter}")
+            else:
+                patience_counter += 1
+                print(f"  patience: {patience_counter}/{CONFIG['patience']}")
+                if patience_counter >= CONFIG['patience']:
+                    print("Early stopping.")
+                    break
 
     total_time = time.time() - start_time
     print(f"\nTraining complete in {total_time/60:.1f} minutes.")
 
     # evaluate on test set using best model
     model.load_state_dict(torch.load(CONFIG['checkpoint_path'], weights_only=True))
-    _, test_st, test_sp, test_et, test_ep = evaluate(
+    _, _, _, test_st, test_sp, test_et, test_ep = evaluate(
         model, test_loader, sent_criterion, device, CONFIG)
 
     test_sent = compute_sentiment_metrics(test_st, test_sp, to_print=True)

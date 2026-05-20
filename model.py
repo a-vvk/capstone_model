@@ -29,6 +29,9 @@ class ModalityEncoder(nn.Module):
         self.norm    = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
 
+        # added this:
+        self.pool_score = nn.Linear(hidden_dim * 2, 1)
+
     def forward(self, x, lengths):
         packed = nn.utils.rnn.pack_padded_sequence(x, lengths.cpu(),
                                                    batch_first=True, enforce_sorted=False)
@@ -36,9 +39,19 @@ class ModalityEncoder(nn.Module):
         out, _ = nn.utils.rnn.pad_packed_sequence(out, batch_first=True)
 
         # mean pool over actual sequence length
+        """
         mask = torch.arange(out.size(1), device=x.device).unsqueeze(0) < lengths.unsqueeze(1)
         mask = mask.unsqueeze(-1).float()
         out  = (out * mask).sum(1) / mask.sum(1)
+        """
+        
+        # added this to better weigth the visuals
+        mask = torch.arange(out.size(1), device=x.device).unsqueeze(0) < lengths.unsqueeze(1)
+        scores = self.pool_score(out).squeeze(-1)
+        scores = scores.masked_fill(~mask, -1e9)
+
+        weights = torch.softmax(scores, dim=1)
+        out = (out * weights.unsqueeze(-1)).sum(dim=1)
 
         return self.dropout(self.norm(F.relu(self.proj(out))))
 
@@ -94,6 +107,8 @@ class AuraMetricsFusionModel(nn.Module):
         self.text_visual_attn = CrossModalAttention(hidden, dropout=dropout)
         self.audio_text_attn  = CrossModalAttention(hidden, dropout=dropout)
         self.visual_text_attn = CrossModalAttention(hidden, dropout=dropout)
+        self.audio_visual_attn = CrossModalAttention(hidden, dropout=dropout)
+        self.visual_audio_attn = CrossModalAttention(hidden, dropout=dropout)
 
         # modality gate: learned weighting of each modality's contribution
         self.modality_gate = ModalityGate(hidden)
@@ -150,9 +165,15 @@ class AuraMetricsFusionModel(nn.Module):
                     v[b] = v[b] + torch.randn_like(v[b]) * 0.1
 
         # cross-modal attention
-        t = self.text_visual_attn(self.text_audio_attn(t, a), v)
-        a = self.audio_text_attn(a, t)
-        v = self.visual_text_attn(v, t)
+        t_from_a = self.text_audio_attn(t, a)
+        t_from_v = self.text_visual_attn(t, v)
+        a_from_t = self.audio_text_attn(a, t)
+        a_from_v = self.audio_visual_attn(a, v)
+        v_from_t = self.visual_text_attn(v, t)
+        v_from_a = self.visual_audio_attn(v, a)
+        t = (t_from_a + t_from_v) / 2
+        a = (a_from_t + a_from_v) / 2
+        v = (v_from_t + v_from_a) / 2
 
         # gate + fuse
         w     = self.modality_gate(t, a, v)
