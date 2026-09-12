@@ -1,6 +1,6 @@
 AuraMetrics
 
-A custom multimodal fusion model for sentiment analysis, built as part of the 41004 Analytics Capstone project at UTS. AuraMetrics fuses text, audio, and visual signals to predict sentiment, with the goal of applying multimodal analysis to retail customer feedback.
+A custom multimodal fusion model for sentiment analysis, built as part of a Capstone project at Uni. AuraMetrics fuses text, audio, and visual signals to predict sentiment, with the goal of applying multimodal analysis to retail customer feedback.
 
 Overview
 
