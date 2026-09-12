@@ -9,15 +9,14 @@ Most sentiment analysis systems rely on text alone. AuraMetrics combines three m
 The model is trained and evaluated on CMU-MOSEI, a standard benchmark dataset for multimodal sentiment analysis.
 
 Architecture
-Text: DistilBERT embeddings
-Audio: COVAREP acoustic features, encoded via a bidirectional LSTM
-Visual: OpenFace 2.0 facial action unit features, encoded via a bidirectional LSTM
-Fusion: Cross-modal attention across all modality pairs (text↔audio, text↔visual), inspired by the MISA architecture
-Robustness: Modality dropout during training, so the model degrades gracefully rather than failing when a modality is missing or noisy at inference — a common real-world constraint that most fusion models ignore
-Output: Continuous sentiment regression head
-Results
+* Text: DistilBERT embeddings
+* Audio: COVAREP acoustic features, encoded via a bidirectional LSTM
+* Visual: OpenFace 2.0 facial action unit features, encoded via a bidirectional LSTM
+* Fusion: Cross-modal attention across all modality pairs (text↔audio, text↔visual), inspired by the MISA architecture
+* Robustness: Modality dropout during training, so the model degrades gracefully rather than failing when a modality is missing or noisy at inference — a common real-world constraint that most fusion models ignore
+* Output: Continuous sentiment regression head
 
-Evaluated on a held-out CMU-MOSEI test split:
+Results (Evaluated on a held-out CMU-MOSEI test split):
 
 Metric	Score
 * MAE	0.4748
@@ -28,8 +27,7 @@ Metric	Score
 * Binary Accuracy, non-neg/neg (Acc-2)	81.80%
 * Training time	64.5 minutes
 
-Project Structure \
-
+Project Structure 
 
 capstone_model \
 ├── model.py &emsp; &emsp; &emsp; &emsp; &emsp; # AuraMetricsFusionModel architecture \
