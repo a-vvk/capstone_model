@@ -2,7 +2,7 @@
 
 A custom multimodal fusion model for sentiment analysis, built as part of a Capstone project at Uni. AuraMetrics fuses text, audio, and visual signals to predict sentiment, with the goal of applying multimodal analysis to retail customer feedback.
 
-Overview
+# Overview
 
 Most sentiment analysis systems rely on text alone. AuraMetrics combines three modalities — spoken/written language, vocal tone, and facial expression — into a single model, on the idea that customer sentiment is often expressed more clearly across channels than in text alone.
 
@@ -16,7 +16,7 @@ Architecture
 * Robustness: Modality dropout during training, so the model degrades gracefully rather than failing when a modality is missing or noisy at inference — a common real-world constraint that most fusion models ignore
 * Output: Continuous sentiment regression head
 
-Results (Evaluated on a held-out CMU-MOSEI test split):
+# Results (Evaluated on a held-out CMU-MOSEI test split):
 
 Metric	Score
 * MAE	0.4748
@@ -27,7 +27,7 @@ Metric	Score
 * Binary Accuracy, non-neg/neg (Acc-2)	81.80%
 * Training time	64.5 minutes
 
-Project Structure 
+# Project Structure 
 
 capstone_model \
 ├── model.py &emsp; &emsp; &emsp; &emsp; &emsp; # AuraMetricsFusionModel architecture \
